@@ -1,4 +1,5 @@
 mod dump_stdout;
+mod signal;
 
 use clap::{Parser, Subcommand};
 
@@ -12,20 +13,24 @@ struct Args {
 enum Commands {
     #[command()]
     DumpStdout,
+    #[command()]
+    Signal,
 }
 
 impl Commands {
-    fn run(&self) -> Result<String, String> {
-        let rt = tokio::runtime::Runtime::new().unwrap();
-        let fut = match self {
-            Commands::DumpStdout => dump_stdout::dump_stdout(),
-        };
-        rt.block_on(fut)
+    async fn run(&self) -> Result<String, String> {
+        match self {
+            Commands::DumpStdout => dump_stdout::dump_stdout().await,
+            Commands::Signal => signal::signal().await,
+        }
     }
 }
 
 fn main() {
     let args = Args::parse();
 
-    println!("result: {:?}", args.command.run());
+    let rt = tokio::runtime::Runtime::new().unwrap();
+    let result = rt.block_on(args.command.run());
+
+    println!("result: {:?}", result);
 }
